@@ -5,6 +5,7 @@ interface Player {
   id: number;
   name: string;
   number: string;
+  teamId?: number; // 添加teamId来标识队员属于哪个队伍
 }
 
 interface Captain {
@@ -18,6 +19,11 @@ export default function Home() {
   const [newPlayer, setNewPlayer] = useState({ name: '', number: '' });
   const [captains, setCaptains] = useState<Captain[]>([]);
   const [newCaptain, setNewCaptain] = useState({ name: '' });
+  const [currentTeamIndex, setCurrentTeamIndex] = useState(0);
+  const [isDistributing, setIsDistributing] = useState(false);
+
+  // 分配顺序数组
+  const distributionOrder = [0, 1, 2, 2, 1, 0];
 
   // 添加队员
   const handleAddPlayer = () => {
@@ -39,6 +45,8 @@ export default function Home() {
   // 重置队员
   const handleResetPlayers = () => {
     setPlayers([]);
+    setCurrentTeamIndex(0);
+    setIsDistributing(false);
   };
 
   // 添加队长
@@ -62,6 +70,52 @@ export default function Home() {
   // 重置队长
   const handleResetCaptains = () => {
     setCaptains([]);
+    setCurrentTeamIndex(0);
+    setIsDistributing(false);
+  };
+
+  // 开始分队
+  const handleStartDistribution = () => {
+    if (captains.length !== 3) {
+      alert('请先选择3名队长！');
+      return;
+    }
+
+    const unassignedPlayers = players.filter(player => player.teamId === undefined);
+    if (unassignedPlayers.length === 0) {
+      alert('所有队员已分配完毕！');
+      return;
+    }
+
+    // 随机选择一个未分配的队员
+    const randomIndex = Math.floor(Math.random() * unassignedPlayers.length);
+    const selectedPlayer = unassignedPlayers[randomIndex];
+
+    // 获取当前应该分配到的队伍索引
+    const teamIndex = distributionOrder[currentTeamIndex % distributionOrder.length];
+
+    // 更新队员的队伍信息
+    setPlayers(players.map(player => 
+      player.id === selectedPlayer.id 
+        ? { ...player, teamId: teamIndex }
+        : player
+    ));
+
+    // 更新下一个分配位置
+    setCurrentTeamIndex(currentTeamIndex + 1);
+    setIsDistributing(true);
+  };
+
+  // 重置分配
+  const handleResetDistribution = () => {
+    setPlayers(players.map(player => ({ ...player, teamId: undefined })));
+    setCurrentTeamIndex(0);
+    setIsDistributing(false);
+  };
+
+  // 获取每个队伍的队员
+  const getTeamPlayers = (teamIndex: number) => {
+    return players.filter(player => player.teamId === teamIndex);
   };
 
   return (
@@ -154,36 +208,105 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 操作按钮 */}
+        {/* 分队操作按钮 */}
         <div className="flex gap-4 mb-8 justify-center">
           <button
+            onClick={handleStartDistribution}
+            className="bg-purple-500 text-white px-6 py-2 rounded hover:bg-purple-600"
+          >
+            开始分队
+          </button>
+          <button
+            onClick={handleResetDistribution}
+            className="bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600"
+          >
+            重置分配
+          </button>
+          <button
             onClick={handleResetPlayers}
-            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            className="bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600"
           >
             重置队员
           </button>
         </div>
 
-        {/* 队员卡片展示区域 */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {players.map((player) => (
-            <div
-              key={player.id}
-              className="bg-white rounded-lg shadow-md p-4 relative group"
-            >
-              <button
-                onClick={() => handleDeletePlayer(player.id)}
-                className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                ×
-              </button>
-              <div className="text-center">
-                <div className="text-lg font-semibold mb-1">{player.name}</div>
-                <div className="text-sm text-gray-600">#{player.number}</div>
+        {/* 队伍展示区域 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {captains.map((captain, index) => (
+            <div key={captain.id} className="space-y-4">
+              {/* 队长卡片 */}
+              <div className={`${captain.color} rounded-lg shadow-md p-4 relative ${
+                captain.color === 'bg-white' ? 'border border-gray-200' : ''
+              }`}>
+                <div className="text-center">
+                  <div className={`text-lg font-semibold mb-1 ${
+                    captain.color === 'bg-white' ? 'text-gray-800' : 'text-white'
+                  }`}>
+                    {captain.name}
+                  </div>
+                  <div className={`text-sm ${
+                    captain.color === 'bg-white' ? 'text-gray-600' : 'text-white/80'
+                  }`}>
+                    队长
+                  </div>
+                </div>
+              </div>
+
+              {/* 队员卡片 */}
+              <div className="grid grid-cols-1 gap-2">
+                {getTeamPlayers(index).map((player) => (
+                  <div
+                    key={player.id}
+                    className={`${captain.color} rounded-lg shadow-md p-3 relative ${
+                      captain.color === 'bg-white' ? 'border border-gray-200' : ''
+                    }`}
+                  >
+                    <div className="text-center">
+                      <div className={`text-base font-semibold ${
+                        captain.color === 'bg-white' ? 'text-gray-800' : 'text-white'
+                      }`}>
+                        {player.name}
+                      </div>
+                      <div className={`text-sm ${
+                        captain.color === 'bg-white' ? 'text-gray-600' : 'text-white/80'
+                      }`}>
+                        #{player.number}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
         </div>
+
+        {/* 未分配队员展示区域 */}
+        {!isDistributing && players.some(player => player.teamId === undefined) && (
+          <div className="mt-8">
+            <h2 className="text-2xl font-semibold mb-4">未分配队员</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {players
+                .filter(player => player.teamId === undefined)
+                .map((player) => (
+                  <div
+                    key={player.id}
+                    className="bg-white rounded-lg shadow-md p-4 relative group"
+                  >
+                    <button
+                      onClick={() => handleDeletePlayer(player.id)}
+                      className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      ×
+                    </button>
+                    <div className="text-center">
+                      <div className="text-lg font-semibold mb-1">{player.name}</div>
+                      <div className="text-sm text-gray-600">#{player.number}</div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
