@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import Image from 'next/image';
 
 interface Player {
   id: number;
@@ -121,8 +122,26 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-100">
       <main className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold text-center mb-8">欢迎来到东升联赛前分队</h1>
+        <h1 className="text-4xl font-bold text-center mb-4">欢迎来到东升联赛前分队</h1>
         
+        {/* Logo展示区域 */}
+        <div className="flex justify-center mb-4">
+          <div className="relative w-32 h-32">
+            <Image
+              src="/logo.jpg"  // 这里需要您上传logo图片到public目录
+              alt="东升联赛队徽"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
+        </div>
+
+        {/* 标语 */}
+        <h2 className="text-2xl font-bold text-center mb-8 text-red-600">
+          公平 公开 公正
+        </h2>
+
         {/* 队长预选区域 */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-2xl font-semibold mb-4">队长预选</h2>
